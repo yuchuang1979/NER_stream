@@ -3,12 +3,11 @@
 
 # In[1]:
 
-
+#from __future__ import unicode_literals, print_function
 import streamlit as st
-
 from annotated_text import annotated_text
-
 import spacy
+#from spacy.lang.en import English # updated
 
 nlp = spacy.load('en_core_web_sm')
 
@@ -16,9 +15,9 @@ nlp = spacy.load('en_core_web_sm')
 
 #x = st.slider('Select a value')
 
-sentence = st.text_input('Input your sentence here:') 
+sentences = st.text_input('Input your sentences here:') 
 
-st.write('The input sentence is: \n', sentence)
+#st.write('The input sentences are: \n', sentences)
 
 def show_ents(doc): 
     if doc.ents: 
@@ -30,6 +29,12 @@ def show_ents(doc):
                   #+ str(spacy.explain(ent.label_)))
     else: 
         print('No named entities found.')
+        
+
+#nlp = English()
+#nlp.add_pipe(nlp.create_pipe('sentencizer')) # updated
+doc = nlp(sentences)
+#sentences = [sent.string.strip() for sent in doc.sents]
 
 def get_color(ent):
     if ent == "PERSON":
@@ -41,32 +46,37 @@ def get_color(ent):
     elif ent == "ORG":
         return "#afe"
     else:
-        ent = None
+        return None
         
 def generate_ents(doc):
     list_param = []
     if doc.ents:
         i = 0
+        len_ents = len(doc.ents)
+        ent_appended = False
         for token in doc:
+   
             extended_token = token.text + " "
-            if token.idx < doc.ents[i].start_char:
-                #print(token.text)
-                #print(token.idx)
+            if i < len_ents and token.idx < doc.ents[i].start_char:
                 list_param.append(extended_token)
-            elif token.idx < doc.ents[i].end_char:
-                #print("passed")
-                #print(token.text)
-                #print(token.idx)
-                pass
+            elif i < len_ents and token.idx < doc.ents[i].end_char:
+                if not ent_appended:
+                    #print(doc.ents[i].label_)
+                    cur_color = get_color(doc.ents[i].label_)
+                    #print(cur_color)
+                    extended_ent = doc.ents[i].text + " "
+                    if cur_color:
+                        list_param.append((extended_ent, doc.ents[i].label_, cur_color))
+                    else:
+                        list_param.append(extended_ent)
+                    ent_appended = True
+                if token.idx + token.__len__() == doc.ents[i].end_char: #the token is the last token in ent
+                    ent_appended = False
+                    i = i + 1
             else:
-                cur_color = get_color(doc.ents[i].label_)
-                extended_ent = doc.ents[i].text + " "
-                if cur_color:
-                    list_param.append((extended_ent, doc.ents[i].label_, cur_color))
-                else:
-                    list_param.append(extended_ent)
-                i = i + 1
                 list_param.append(extended_token)
+            #print(list_param)
+            #input("input any")
     else:
         for token in doc:
             extended_token = token.text + " "
@@ -75,10 +85,10 @@ def generate_ents(doc):
     return list_param
 
 
-doc = nlp(sentence)
-show_ents(doc)
+doc = nlp(sentences)
+#show_ents(doc)
+#print(doc.ents)
 list_param = generate_ents(doc)
-print(list_param)
 
 
         
@@ -93,7 +103,3 @@ annotated_text(*list_param)
 
 
 # In[ ]:
-
-
-
-
